@@ -1,0 +1,27 @@
+{
+  "name": "nodejs-agent-four-memory-layers",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The Four Memory Layers Every Node.js Agent Needs — demo repo",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "act0": "tsx src/acts/act0-strawman.ts",
+    "act1": "tsx src/acts/act1-overflow.ts",
+    "act2": "tsx src/acts/act2-cost-cliff.ts",
+    "act3": "node --expose-gc --import tsx src/acts/act3-leak.ts",
+    "act4": "tsx src/acts/act4-retrieval-noise.ts",
+    "act5": "tsx src/acts/act5-full-stack.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "dependencies": {
+    "zod": "^3.24.1"
+  }
+}
