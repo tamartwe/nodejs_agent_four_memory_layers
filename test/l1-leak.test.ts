@@ -25,8 +25,9 @@ describe('L1 working memory', () => {
     await settleGc();
     const growthMb = (process.memoryUsage().heapUsed - before) / MB;
 
-    // Leaky version (module-scoped Map, no dispose): ~64 MB. Correct version: < 5 MB.
-    expect(growthMb).toBeLessThan(5);
+    // Leaky version (module-scoped Map, no dispose): ~64 MB. Correct version: < 8 MB
+    // (headroom above the ~5.2 MB baseline overhead observed on newer Node/V8 versions).
+    expect(growthMb).toBeLessThan(8);
   });
 
   it('disposes the run context even when the body throws', async () => {
