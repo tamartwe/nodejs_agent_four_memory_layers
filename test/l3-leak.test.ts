@@ -13,7 +13,10 @@ describe('L3 tool call state', () => {
 
     const blocks = await withRun({ maxTokens: 50_000, timeoutMs: 5_000 }, async (ctx) => {
       using registry = new ToolCallRegistry();
-      return runToolBatch(
+      // The await matters: `using` disposes registry (aborting anything still inflight)
+      // the instant this block's scope exits. Returning the bare promise would exit the
+      // block — and dispose the registry — before runToolBatch actually finishes.
+      return await runToolBatch(
         [
           { id: 'a', name: 'read_issue', input: { id: 'ENG-4471' } },
           { id: 'b', name: 'read_issue', input: { id: 'ENG-9999' } }, // does not exist
@@ -68,8 +71,15 @@ describe('L3 tool call state', () => {
     const registry = new ToolCallRegistry();
 
     await withRun({ maxTokens: 10_000, timeoutMs: 5_000 }, async (ctx) => {
-      const p = runToolBatch([{ id: 'h', name: 'hanging_tool', input: {} }], ctx, { tools, registry, spill, timeoutMs: 10_000 }, 0);
-      await new Promise((r) => setTimeout(r, 20));
+      const p = runToolBatch(
+        [{ id: 'h', name: 'hanging_tool', input: {} }],
+        ctx,
+        { tools, registry, spill, timeoutMs: 10_000 },
+        0,
+      );
+      await new Promise((r) => {
+        setTimeout(r, 20);
+      });
       registry[Symbol.dispose]();
       const blocks = await p;
       expect(blocks[0].type).toBe('tool_result');

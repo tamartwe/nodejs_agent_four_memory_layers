@@ -15,12 +15,7 @@ export interface StepRecord {
   ts: number;
 }
 
-export function idempotencyKey(
-  runId: string,
-  stepIndex: number,
-  toolName: string,
-  inputHash: string,
-): string {
+export function idempotencyKey(runId: string, stepIndex: number, toolName: string, inputHash: string): string {
   return createHash('sha256').update([runId, stepIndex, toolName, inputHash].join('|')).digest('hex').slice(0, 32);
 }
 
@@ -34,6 +29,7 @@ export class InMemoryStepLog implements StepLog {
   async append(rec: StepRecord): Promise<void> {
     this.records.push({ ...rec });
   }
+
   async read(runId: string): Promise<StepRecord[]> {
     return this.records.filter((r) => r.runId === runId);
   }

@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "description": "The Four Memory Layers Every Node.js Agent Needs — demo repo",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "act0": "tsx src/acts/act0-strawman.ts",
     "act1": "tsx src/acts/act1-overflow.ts",
@@ -13,15 +15,32 @@
     "act4": "tsx src/acts/act4-retrieval-noise.ts",
     "act5": "tsx src/acts/act5-full-stack.ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\" \"vitest.config.ts\"",
+    "lint:fix": "eslint \"src/**/*.ts\" \"test/**/*.ts\" \"vitest.config.ts\" --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"*.{md,json}\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"*.{md,json}\""
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.1",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-airbnb-typescript": "^18.0.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-prettier": "^5.5.6",
+    "prettier": "^3.9.6",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
   },
   "dependencies": {
-    "zod": "^3.24.1"
+    "@anthropic-ai/sdk": "^0.115.0",
+    "dotenv": "^17.4.2",
+    "zod": "^3.24.1",
+    "zod-to-json-schema": "^3.25.2"
   }
 }

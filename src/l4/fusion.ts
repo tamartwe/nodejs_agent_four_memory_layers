@@ -20,9 +20,7 @@ export function rrf(lists: Ranked[][], k = RRF_K): Ranked[] {
       fused.set(item.id, (fused.get(item.id) ?? 0) + 1 / (k + index + 1));
     });
   }
-  return [...fused.entries()]
-    .map(([id, score]) => ({ id, score }))
-    .sort((a, b) => b.score - a.score);
+  return [...fused.entries()].map(([id, score]) => ({ id, score })).sort((a, b) => b.score - a.score);
 }
 
 /**
@@ -32,8 +30,8 @@ export function rrf(lists: Ranked[][], k = RRF_K): Ranked[] {
 export function mmr<T extends { id: string; emb: Float32Array; score: number }>(
   candidates: T[],
   k: number,
-  lambda = 0.7,
   sim: (a: Float32Array, b: Float32Array) => number,
+  lambda = 0.7,
 ): T[] {
   const selected: T[] = [];
   const pool = [...candidates];

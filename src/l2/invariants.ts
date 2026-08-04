@@ -30,9 +30,7 @@ export function assertWellFormed(messages: Message[]): void {
 
     if (msg.role === 'assistant') {
       if (pending.size) {
-        throw new TranscriptInvariantError(
-          `msg[${i}]: assistant turn while ${pending.size} tool_use still unanswered`,
-        );
+        throw new TranscriptInvariantError(`msg[${i}]: assistant turn while ${pending.size} tool_use still unanswered`);
       }
       for (const b of msg.content) if (b.type === 'tool_use') pending.add(b.id);
       continue;
@@ -55,9 +53,7 @@ export function assertWellFormed(messages: Message[]): void {
   }
 
   if (pending.size) {
-    throw new TranscriptInvariantError(
-      `transcript ends with unanswered tool_use: ${[...pending].join(', ')}`,
-    );
+    throw new TranscriptInvariantError(`transcript ends with unanswered tool_use: ${[...pending].join(', ')}`);
   }
 }
 

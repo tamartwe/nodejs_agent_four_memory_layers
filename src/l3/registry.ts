@@ -72,9 +72,13 @@ export class ToolCallRegistry implements Disposable {
   }
 
   settle(rec: CallRecord, state: CallState, patch: Partial<CallRecord> = {}): void {
+    /* eslint-disable no-param-reassign -- `rec` is the record's own owner mutating it in
+     * place; callers keep the same reference from open() specifically so a settle() here
+     * is visible wherever else that record is held, no re-fetch required. */
     rec.state = state;
     rec.endedAt = performance.now();
     Object.assign(rec, patch);
+    /* eslint-enable no-param-reassign */
     this.inflight.delete(rec.id);
     rec.controller.abort(); // idempotent; releases any listener still attached
   }

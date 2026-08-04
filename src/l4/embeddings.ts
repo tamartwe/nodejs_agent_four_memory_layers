@@ -19,10 +19,36 @@ export interface Embedder {
 }
 
 const TOPICS: Record<string, string[]> = {
-  connectivity: ['connection', 'connect', 'socket', 'econnreset', 'econnrefused', 'dropped', 'drop', 'reset', 'network', 'tcp', 'disconnect', 'refused', 'unreachable'],
+  connectivity: [
+    'connection',
+    'connect',
+    'socket',
+    'econnreset',
+    'econnrefused',
+    'dropped',
+    'drop',
+    'reset',
+    'network',
+    'tcp',
+    'disconnect',
+    'refused',
+    'unreachable',
+  ],
   timeout: ['timeout', 'timed', 'slow', 'hang', 'hanging', 'stall', 'deadline', 'latency', 'expired'],
   retry: ['retry', 'retries', 'backoff', 'jitter', 'idempotent', 'idempotency', 'redelivery', 'reattempt'],
-  auth: ['auth', 'authentication', 'login', 'token', 'jwt', 'oauth', 'session', 'credential', 'unauthorized', '401', 'permission'],
+  auth: [
+    'auth',
+    'authentication',
+    'login',
+    'token',
+    'jwt',
+    'oauth',
+    'session',
+    'credential',
+    'unauthorized',
+    '401',
+    'permission',
+  ],
   payments: ['payment', 'checkout', 'charge', 'card', 'billing', 'refund', 'invoice', 'stripe', 'order'],
   database: ['database', 'db', 'postgres', 'query', 'sql', 'index', 'migration', 'deadlock', 'transaction', 'pool'],
   memory: ['memory', 'heap', 'leak', 'rss', 'gc', 'oom', 'buffer', 'allocation', 'garbage'],
@@ -97,6 +123,10 @@ function normalize(v: Float32Array): void {
   for (let i = 0; i < v.length; i++) sum += v[i] * v[i];
   const norm = Math.sqrt(sum);
   if (norm === 0) return;
+  // Normalizing IN PLACE is the point: the surrounding module's whole reason for using
+  // Float32Array over number[] is to avoid the extra allocation a copy-then-return
+  // would reintroduce.
+  // eslint-disable-next-line no-param-reassign
   for (let i = 0; i < v.length; i++) v[i] /= norm;
 }
 

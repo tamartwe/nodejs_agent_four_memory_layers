@@ -57,12 +57,7 @@ export async function runToolBatch(
   });
 }
 
-async function runOne(
-  use: ToolUse,
-  ctx: RunContext,
-  deps: ExecutorDeps,
-  stepIndex: number,
-): Promise<ContentBlock> {
+async function runOne(use: ToolUse, ctx: RunContext, deps: ExecutorDeps, stepIndex: number): Promise<ContentBlock> {
   const rec = deps.registry.open(use, stepIndex);
 
   // The cancellation TREE: run deadline, per-call timeout, and the registry's own handle,
@@ -87,11 +82,11 @@ async function runOne(
         return {
           type: 'tool_result',
           tool_use_id: use.id,
-          content:
-            `Identical call already made at step ${prior?.stepIndex ?? '?'}. ` +
-            (prior?.resultRef?.id
+          content: `Identical call already made at step ${prior?.stepIndex ?? '?'}. ${
+            prior?.resultRef?.id
               ? `Its result is available via read_result({ ref="${prior.resultRef.id}" }).`
-              : 'Reuse the earlier result rather than repeating this call.'),
+              : 'Reuse the earlier result rather than repeating this call.'
+          }`,
         };
       }
       ctx.seen.add(key);
@@ -112,8 +107,9 @@ async function runOne(
     return { type: 'tool_result', tool_use_id: use.id, content: text };
   } catch (err) {
     const e = err as Error;
-    const state: CallState =
-      e?.name === 'TimeoutError' ? 'timeout' : signal.aborted ? 'cancelled' : 'error';
+    let state: CallState = 'error';
+    if (e?.name === 'TimeoutError') state = 'timeout';
+    else if (signal.aborted) state = 'cancelled';
     deps.registry.settle(rec, state, { error: { name: e?.name ?? 'Error', message: e?.message ?? String(err) } });
     ctx.metrics.toolErrors++;
 
@@ -157,6 +153,8 @@ export function toModelReadableError(err: unknown): string {
 export async function leakyRace<T>(work: () => Promise<T>, ms: number): Promise<T> {
   return Promise.race([
     work(),
-    new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error('timeout')), ms);
+    }),
   ]);
 }

@@ -69,9 +69,7 @@ export interface Materialized {
 }
 
 export async function materialize(raw: unknown, spill: SpillStore): Promise<Materialized> {
-  const buf = Buffer.isBuffer(raw)
-    ? raw
-    : Buffer.from(typeof raw === 'string' ? raw : JSON.stringify(raw, null, 0));
+  const buf = Buffer.isBuffer(raw) ? raw : Buffer.from(typeof raw === 'string' ? raw : JSON.stringify(raw, null, 0));
   const bytes = buf.byteLength;
 
   if (bytes <= INLINE_LIMIT_BYTES) {

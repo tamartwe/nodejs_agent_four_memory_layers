@@ -44,10 +44,22 @@ export function renderRollup(r: Rollup): string {
     for (const i of items) lines.push(`    - ${i}`);
     lines.push(`  </${title}>`);
   };
-  section('decisions', r.decisions.map((d) => `[turn ${d.turn}] ${d.what} — ${d.rationale}`));
-  section('facts', r.facts.map((f) => `${f.key}: ${f.value} (${f.source})`));
-  section('artifacts', r.artifacts.map((a) => `${a.ref} — ${a.role}`));
-  section('rejected', r.rejected.map((x) => `${x.option} — ${x.why}`));
+  section(
+    'decisions',
+    r.decisions.map((d) => `[turn ${d.turn}] ${d.what} — ${d.rationale}`),
+  );
+  section(
+    'facts',
+    r.facts.map((f) => `${f.key}: ${f.value} (${f.source})`),
+  );
+  section(
+    'artifacts',
+    r.artifacts.map((a) => `${a.ref} — ${a.role}`),
+  );
+  section(
+    'rejected',
+    r.rejected.map((x) => `${x.option} — ${x.why}`),
+  );
   section('open_questions', r.openQuestions);
   section('user_preferences', r.userPreferences);
   lines.push('</conversation_summary>');

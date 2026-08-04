@@ -21,6 +21,8 @@ export const collectedCount = (): number => collected.size;
 export async function settleGc(rounds = 3): Promise<void> {
   for (let i = 0; i < rounds; i++) {
     global.gc?.();
-    await new Promise((r) => setImmediate(r));
+    await new Promise((r) => {
+      setImmediate(r);
+    });
   }
 }

@@ -14,21 +14,21 @@ gradient (irrelevant tokens actively degrade output).
 
 ## The four layers
 
-| | Layer | The question it answers | Lifetime | Lives in |
-|---|---|---|---|---|
-| **L1** | Working memory | "What am I doing right now?" | one run | V8 heap |
-| **L2** | Conversation history | "What has been said?" | one session | heap → Redis/PG |
-| **L3** | Tool call state | "What did I dispatch, and did it come back?" | one run, but with *resources* | heap + OS handles |
-| **L4** | Long-term retrieval | "What do I know that isn't in front of me?" | forever | Postgres/pgvector |
+|        | Layer                | The question it answers                      | Lifetime                      | Lives in          |
+| ------ | -------------------- | -------------------------------------------- | ----------------------------- | ----------------- |
+| **L1** | Working memory       | "What am I doing right now?"                 | one run                       | V8 heap           |
+| **L2** | Conversation history | "What has been said?"                        | one session                   | heap → Redis/PG   |
+| **L3** | Tool call state      | "What did I dispatch, and did it come back?" | one run, but with _resources_ | heap + OS handles |
+| **L4** | Long-term retrieval  | "What do I know that isn't in front of me?"  | forever                       | Postgres/pgvector |
 
-Each fails in a way that looks like a *different* bug, which is why teams misdiagnose:
+Each fails in a way that looks like a _different_ bug, which is why teams misdiagnose:
 
-| Layer | Failure mode | What it looks like | What gets blamed |
-|---|---|---|---|
-| L1 | Leak / unbounded scratch | RSS climbs, p99 climbs, OOM at 3am | "Node memory leak" |
-| L2 | Bad eviction | Agent forgets what it decided 3 steps ago; API 400s | "the model is dumb" |
-| L3 | Orphaned calls | Hung runs, duplicate side effects | "flaky tool API" |
-| L4 | Retrieval noise | Confidently wrong answers | "bad embeddings" |
+| Layer | Failure mode             | What it looks like                                  | What gets blamed    |
+| ----- | ------------------------ | --------------------------------------------------- | ------------------- |
+| L1    | Leak / unbounded scratch | RSS climbs, p99 climbs, OOM at 3am                  | "Node memory leak"  |
+| L2    | Bad eviction             | Agent forgets what it decided 3 steps ago; API 400s | "the model is dumb" |
+| L3    | Orphaned calls           | Hung runs, duplicate side effects                   | "flaky tool API"    |
+| L4    | Retrieval noise          | Confidently wrong answers                           | "bad embeddings"    |
 
 **None of these are fixed by a better model.** All four are fixed by a better program.
 
@@ -40,20 +40,30 @@ npm test          # 24 tests, including two unit tests for memory leaks
 npm run act0      # then act1 ... act5
 ```
 
-Node 22+. No API key, no database, no network: the model is a deterministic `ScriptedModel`
-with an honest prefix-cache simulator, and the embedder is a deterministic local one. Set
-`ANTHROPIC_API_KEY` and swap in `LiveModel` to run the same code against the real API.
+Node 22+. Acts 1-5 need no API key, no database, no network: the model is a deterministic
+`ScriptedModel` with an honest prefix-cache simulator, and the embedder is a deterministic
+local one. Act 0 calls the **real** Claude API by default (`export ANTHROPIC_API_KEY` first) —
+small scale, a handful of turns, real token/cost numbers — and falls back to the same
+scripted model, loudly, if the key isn't set. `LiveModel` (`src/model/client.ts`) is the same
+`ModelClient` interface either way, so it drops into any act.
 
 ## The five acts
 
 Each act breaks something, then fixes it. Run them in order.
 
 ### `npm run act0` — the strawman
-`messages.push()` in a loop. Works beautifully for six turns. At twenty turns, with one
-`read_file` on a large file, the transcript is **5.2M tokens and $40** — and the event loop
-p99 is ~500 ms, because `JSON.stringify` on a 20 MB result is synchronous.
 
-### `npm run act1` — overflow, then a *different* 400
+`messages.push()` in a loop. Runs against the **real Claude API** (`claude-haiku-4-5` by
+default — fast and cheap enough to demo live for cents; `MODEL=...` to point it elsewhere),
+so the token and dollar figures printed after every turn are genuine API `usage` numbers,
+not a scripted stand-in. Requires `ANTHROPIC_API_KEY`; without it, act0 falls back to an
+offline scripted model and says so loudly. Works beautifully for a handful of turns — that's
+exactly the trap. The same naive loop, scaled to a 20-turn investigation that reads one large
+file, is what turns into a **5.2M-token, $40 transcript** with ~500 ms event-loop stalls
+(`JSON.stringify` on a 20 MB result is synchronous) — same slope, just further out.
+
+### `npm run act1` — overflow, then a _different_ 400
+
 Context overflow is not an edge case, it's a certainty. The obvious fix (drop the oldest 10
 messages) turns a context-overflow 400 into a **tool-pairing 400**: you cut between a
 `tool_use` and its `tool_result`. `assertWellFormed()` catches it in CI instead of at 2am
@@ -63,8 +73,9 @@ The rule: you can only cut at **turn boundaries**. A single agent turn with 30 t
 **atomic** — if one turn exceeds the budget, no eviction policy saves you and L3 has to spill.
 
 ### `npm run act2` — the cost cliff
+
 Eviction now works. Same conversation, same model, same answers. The only difference is
-*when* we evict:
+_when_ we evict:
 
 ```
 A: evict every turn      cache hit 57.6%   $0.96
@@ -76,13 +87,14 @@ it is a miss. Evicting one message per turn changes the front of the array every
 Waiting until 80% and then trimming to 50% keeps the prefix byte-identical between
 evictions. One scheduling decision.
 
-*(The gap widens with the size of the stable prefix. A 100k-token prefix on a 50-turn
-session is closer to 7x.)*
+_(The gap widens with the size of the stable prefix. A 100k-token prefix on a 50-turn
+session is closer to 7x.)_
 
 Corollary: **injecting retrieved documents at the top of the prompt destroys your cache
 every turn.** Retrieval output belongs below the cache breakpoint.
 
 ### `npm run act3` — the leak
+
 ```
 LEAKY     heapUsed 85.4 KB   arrayBuffers 120.0 MB   rss 129.8 MB
 CORRECT   heapUsed  2.6 MB   arrayBuffers      0 B   rss   2.9 MB
@@ -104,6 +116,7 @@ threaded all the way to the syscall. A tool handler that accepts a signal and ig
 worse than one that doesn't accept it, because it lies to the caller.
 
 ### `npm run act4` — when vectors help, and when they're expensive noise
+
 ```
 Q: "what was the fix for the ECONNRESET in ENG-4471"
   vector   -> ENG-4060, ENG-4432, ENG-4228     <- real tickets. wrong tickets.
@@ -120,14 +133,14 @@ Q: "our stripe integration keeps disconnecting mid-charge"
 get `ENG-4470`: a real, well-formed, wrong answer the model has no way to detect. Neither leg
 is sufficient; that's what RRF is for.
 
-| Query shape | Vectors? | Use instead |
-|---|---|---|
-| paraphrase, concept, no lexical overlap | ✅ | — |
-| exact identifiers, error codes, versions | ❌ | BM25 / exact index |
-| structured predicates ("orders over $500") | ❌ | SQL |
-| "what did the user say they preferred?" | ❌ | L2 rollup / fact store |
-| "did I already do X in this run?" | ❌ | L3 registry |
-| corpus < ~2k chunks | ❌ | put it in context, or BM25 |
+| Query shape                                | Vectors? | Use instead                |
+| ------------------------------------------ | -------- | -------------------------- |
+| paraphrase, concept, no lexical overlap    | ✅       | —                          |
+| exact identifiers, error codes, versions   | ❌       | BM25 / exact index         |
+| structured predicates ("orders over $500") | ❌       | SQL                        |
+| "what did the user say they preferred?"    | ❌       | L2 rollup / fact store     |
+| "did I already do X in this run?"          | ❌       | L3 registry                |
+| corpus < ~2k chunks                        | ❌       | put it in context, or BM25 |
 
 > Vectors are for **recall over paraphrase at scale**. Everything else has a better index.
 
@@ -136,6 +149,7 @@ cosine second), contradiction handling (`valid_to`, never `DELETE`), and decay. 
 signal, not garbage" is achieved at `INSERT` time.
 
 ### `npm run act5` — all four layers, then crash and resume
+
 Full run with the metrics panel, then the process is killed at step 12 and resumed from the
 write-ahead step log without re-running any completed step. Idempotency keys are **derived**,
 not random — `randomUUID()` per attempt defeats the entire mechanism.

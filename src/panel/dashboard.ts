@@ -20,7 +20,7 @@ export function banner(act: string, title: string): void {
 }
 
 export function section(title: string): void {
-  console.log(`\n${c.bold('--- ' + title + ' ' + '-'.repeat(Math.max(0, 70 - title.length)))}\n`);
+  console.log(`\n${c.bold(`--- ${title} ${'-'.repeat(Math.max(0, 70 - title.length))}`)}\n`);
 }
 
 /** The metrics panel is the real star of the demo: it makes the failures VISIBLE. */
@@ -28,20 +28,25 @@ export function stepLine(info: StepInfo, maxTokens: number): void {
   const pct = info.bufferTokens / maxTokens;
   const bar = renderBar(pct, 20);
   const hit = (info.hitRate * 100).toFixed(0).padStart(3);
-  const hitColor = info.hitRate > 0.5 ? c.green : info.hitRate > 0.2 ? c.yellow : c.red;
+  let hitColor = c.red;
+  if (info.hitRate > 0.5) hitColor = c.green;
+  else if (info.hitRate > 0.2) hitColor = c.yellow;
   console.log(
     `step ${String(info.step).padStart(2)} ${bar} ${String(info.bufferTokens).padStart(6)} tok  ` +
-      `cache ${hitColor(hit + '%')}  $${info.costUsd.toFixed(4)}  ` +
-      `evict ${info.evictions}  inflight ${info.inflight}  ` +
-      (info.orphaned ? c.red(`orphaned ${info.orphaned}`) : c.dim('orphaned 0')) +
-      c.dim(`  [${info.toolNames.join(', ')}]`),
+      `cache ${hitColor(`${hit}%`)}  $${info.costUsd.toFixed(4)}  ` +
+      `evict ${info.evictions}  inflight ${info.inflight}  ${
+        info.orphaned ? c.red(`orphaned ${info.orphaned}`) : c.dim('orphaned 0')
+      }${c.dim(`  [${info.toolNames.join(', ')}]`)}`,
   );
 }
 
 export function renderBar(pct: number, width: number): string {
   const filled = Math.min(width, Math.round(pct * width));
   const body = '#'.repeat(filled) + '.'.repeat(width - filled);
-  return pct > 0.9 ? c.red(`[${body}]`) : pct > 0.7 ? c.yellow(`[${body}]`) : c.green(`[${body}]`);
+  let color = c.green;
+  if (pct > 0.9) color = c.red;
+  else if (pct > 0.7) color = c.yellow;
+  return color(`[${body}]`);
 }
 
 export function heapLine(label: string): void {

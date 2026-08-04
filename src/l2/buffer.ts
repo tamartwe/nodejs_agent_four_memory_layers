@@ -25,12 +25,15 @@ export class InMemoryArchive implements Archive {
   async put(messages: Message[]): Promise<void> {
     this.raw.push(...messages);
   }
+
   async previousRollup(): Promise<Rollup | null> {
     return this.rollup;
   }
+
   async saveRollup(r: Rollup): Promise<void> {
     this.rollup = r;
   }
+
   async all(): Promise<Message[]> {
     return this.raw;
   }
@@ -73,8 +76,16 @@ export function bridgeMessages(
   summary: string,
 ): Message[] {
   const ack = 'Understood — continuing from that summary.';
-  const asUser = (t: string): Message => ({ role: 'user', content: [{ type: 'text', text: t }], meta: { kind: 'rollup' } });
-  const asAssistant = (t: string): Message => ({ role: 'assistant', content: [{ type: 'text', text: t }], meta: { kind: 'rollup' } });
+  const asUser = (t: string): Message => ({
+    role: 'user',
+    content: [{ type: 'text', text: t }],
+    meta: { kind: 'rollup' },
+  });
+  const asAssistant = (t: string): Message => ({
+    role: 'assistant',
+    content: [{ type: 'text', text: t }],
+    meta: { kind: 'rollup' },
+  });
 
   if (prefixLastRole === 'user') {
     return suffixFirstRole === 'user' ? [asAssistant(summary)] : [asAssistant(summary), asUser(ack)];
@@ -225,7 +236,9 @@ export class ConversationBuffer {
     const ids = new Set<string>();
     for (const m of this.messages) {
       for (const b of m.content) {
-        const s = b.type === 'text' ? b.text : b.type === 'tool_result' ? b.content : '';
+        let s = '';
+        if (b.type === 'text') s = b.text;
+        else if (b.type === 'tool_result') s = b.content;
         for (const match of s.matchAll(/\b(ENG-\d+|[\w./-]+\.(?:ts|md|sh|json))\b/g)) ids.add(match[1]);
       }
     }

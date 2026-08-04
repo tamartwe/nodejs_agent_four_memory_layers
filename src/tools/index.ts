@@ -1,7 +1,9 @@
 import { z } from 'zod';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 import type { RunContext } from '../l1/run-context.js';
 import type { SpillStore } from '../l3/spill.js';
 import type { MemoryStore } from '../l4/store.js';
+import type { ToolDefinition } from '../model/client.js';
 import { buildCorpus } from '../corpus/generate.js';
 
 export interface ToolContext {
@@ -25,17 +27,42 @@ export class ToolRegistry {
     this.tools.set(tool.name, tool);
     return this;
   }
+
   get(name: string): Tool | undefined {
     return this.tools.get(name);
   }
+
   list(): Tool[] {
     return [...this.tools.values()];
   }
+
+  /** A registry containing only the named tools — e.g. hiding L3-only tools
+   *  (`read_result`, `hanging_tool`) from a caller that never spills or hangs anything. */
+  subset(names: string[]): ToolRegistry {
+    const r = new ToolRegistry();
+    for (const name of names) {
+      const t = this.tools.get(name);
+      if (t) r.register(t);
+    }
+    return r;
+  }
+
   /** What gets sent to the API — and re-sent on EVERY request, so it counts against the
    *  window. People forget to budget for tool definitions. */
-  definitions() {
-    return this.list().map((t) => ({ name: t.name, description: t.description }));
+  definitions(): ToolDefinition[] {
+    return this.list().map((t) => ({
+      name: t.name,
+      description: t.description,
+      input_schema: toInputSchema(t.schema),
+    }));
   }
+}
+
+/** zod -> JSON Schema, the shape `input_schema` needs for a real tool_use call. Only
+ *  ScriptedModel-driven acts can get away with `{name, description}` alone. */
+function toInputSchema(schema: z.ZodTypeAny): Record<string, unknown> {
+  const { $schema, ...rest } = zodToJsonSchema(schema, { target: 'jsonSchema7' }) as Record<string, unknown>;
+  return rest;
 }
 
 const corpus = buildCorpus();
@@ -144,7 +171,7 @@ export function buildTools(deps: BuildToolsDeps): ToolRegistry {
   });
 
   if (deps.store) {
-    const store = deps.store;
+    const { store } = deps;
     registry.register({
       name: 'search_memory',
       description: 'Hybrid search over long-term memory (lexical + vector, RRF-fused).',
@@ -164,7 +191,10 @@ export function buildTools(deps: BuildToolsDeps): ToolRegistry {
 /** Cancellable sleep: the signal must reach the timer, or cancellation is a lie. */
 export function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
-    if (signal?.aborted) return reject(signal.reason);
+    if (signal?.aborted) {
+      reject(signal.reason);
+      return;
+    }
     const t = setTimeout(resolve, ms);
     signal?.addEventListener(
       'abort',

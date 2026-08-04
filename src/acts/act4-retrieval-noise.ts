@@ -70,7 +70,7 @@ console.log(colors.dim('  An agent given three wrong documents confidently answe
 
 section('5. versioned docs: valid_to, not DELETE');
 const deploy = await store.retrieve('how do we deploy to production', { limit: 2 });
-console.log('  ' + pack(deploy, 600).split('\n').slice(0, 4).join('\n  '));
+console.log(`  ${pack(deploy, 600).split('\n').slice(0, 4).join('\n  ')}`);
 verdict(
   !deploy.some((h) => h.chunk.content.includes('helm upgrade manually')),
   'the superseded 2023 runbook was not retrieved',
@@ -80,13 +80,13 @@ section('6. the write path: dedup, contradiction, audit trail');
 const facts = new FactStore();
 const base = { subject: 'user', confidence: 0.8, sourceRunId: 'run-1', validFrom: new Date('2025-01-01') };
 console.log(
-  '  ' +
-    (await facts.upsert({ ...base, predicate: 'prefers', object: 'pnpm', text: 'the user prefers pnpm' })).action,
+  `  ${(await facts.upsert({ ...base, predicate: 'prefers', object: 'pnpm', text: 'the user prefers pnpm' })).action}`,
 );
 console.log(
-  '  ' +
+  `  ${
     (await facts.upsert({ ...base, predicate: 'prefers', object: 'pnpm', text: 'user prefers pnpm for installs' }))
-      .action + colors.dim('   <- deduped, not a 40th copy'),
+      .action
+  }${colors.dim('   <- deduped, not a 40th copy')}`,
 );
 const superseded = await facts.upsert({
   ...base,
@@ -95,9 +95,16 @@ const superseded = await facts.upsert({
   object: 'bun',
   text: 'the user prefers bun',
 });
-console.log('  ' + superseded.action + colors.dim(`   <- closed ${superseded.supersededIds.length} old fact(s), did not DELETE`));
+console.log(
+  `  ${superseded.action}${colors.dim(`   <- closed ${superseded.supersededIds.length} old fact(s), did not DELETE`)}`,
+);
 console.log(`\n  current facts: ${facts.current.length}   total rows: ${facts.all.length}`);
-console.log(`  as of 2025-03-01: ${facts.asOf(new Date('2025-03-01')).map((f) => f.object).join(', ')}`);
+console.log(
+  `  as of 2025-03-01: ${facts
+    .asOf(new Date('2025-03-01'))
+    .map((f) => f.object)
+    .join(', ')}`,
+);
 console.log(`  as of today:      ${facts.current.map((f) => f.object).join(', ')}`);
 console.log(colors.dim('\n  Bi-temporal modelling gives you current-state queries, "what did we believe on'));
 console.log(colors.dim('  date X" for debugging, and an audit trail — for one nullable column.'));

@@ -8,7 +8,10 @@ import { transcriptTokens } from '../src/l2/tokens.js';
 function transcript(turns: number): Message[] {
   const msgs: Message[] = [{ role: 'user', content: [{ type: 'text', text: 'start' }] }];
   for (let i = 0; i < turns; i++) {
-    msgs.push({ role: 'assistant', content: [{ type: 'tool_use', id: `t${i}`, name: 'read_issue', input: { id: i } }] });
+    msgs.push({
+      role: 'assistant',
+      content: [{ type: 'tool_use', id: `t${i}`, name: 'read_issue', input: { id: i } }],
+    });
     msgs.push({ role: 'user', content: [{ type: 'tool_result', tool_use_id: `t${i}`, content: 'x'.repeat(400) }] });
     msgs.push({ role: 'assistant', content: [{ type: 'text', text: `finding ${i}` }] });
     msgs.push({ role: 'user', content: [{ type: 'text', text: 'continue' }] });

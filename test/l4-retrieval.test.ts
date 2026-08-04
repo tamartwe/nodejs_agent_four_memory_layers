@@ -54,15 +54,36 @@ describe('L4 write path', () => {
     const facts = new FactStore();
     const base = { subject: 'user', confidence: 0.8, sourceRunId: 'r1', validFrom: new Date('2025-01-01') };
     await facts.upsert({ ...base, predicate: 'prefers', object: 'pnpm', text: 'the user prefers pnpm' });
-    const second = await facts.upsert({ ...base, predicate: 'prefers', object: 'pnpm', text: 'user prefers pnpm for installs' });
+    const second = await facts.upsert({
+      ...base,
+      predicate: 'prefers',
+      object: 'pnpm',
+      text: 'user prefers pnpm for installs',
+    });
     expect(second.action).toBe('reinforced');
     expect(facts.current).toHaveLength(1);
   });
 
   it('closes contradicting facts instead of deleting them', async () => {
     const facts = new FactStore();
-    await facts.upsert({ subject: 'user', predicate: 'prefers', object: 'pnpm', text: 'prefers pnpm', confidence: 0.9, sourceRunId: 'r1', validFrom: new Date('2025-01-01') });
-    const res = await facts.upsert({ subject: 'user', predicate: 'prefers', object: 'bun', text: 'prefers bun', confidence: 0.9, sourceRunId: 'r2', validFrom: new Date('2025-06-01') });
+    await facts.upsert({
+      subject: 'user',
+      predicate: 'prefers',
+      object: 'pnpm',
+      text: 'prefers pnpm',
+      confidence: 0.9,
+      sourceRunId: 'r1',
+      validFrom: new Date('2025-01-01'),
+    });
+    const res = await facts.upsert({
+      subject: 'user',
+      predicate: 'prefers',
+      object: 'bun',
+      text: 'prefers bun',
+      confidence: 0.9,
+      sourceRunId: 'r2',
+      validFrom: new Date('2025-06-01'),
+    });
 
     expect(res.action).toBe('superseded');
     expect(facts.current).toHaveLength(1);

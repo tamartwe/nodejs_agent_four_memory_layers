@@ -82,8 +82,9 @@ async function measure(label: string, fn: (i: number) => Promise<void>) {
   console.log(
     `${label.padEnd(16)} heapUsed ${colors.dim(fmtBytes(heapDelta).padStart(10))}   ` +
       `arrayBuffers ${(bufDelta > 20e6 ? colors.red : colors.green)(fmtBytes(bufDelta).padStart(10))}   ` +
-      `rss ${(rssDelta > 40e6 ? colors.red : colors.green)(fmtBytes(rssDelta).padStart(10))}   ` +
-      colors.dim(`${(performance.now() - t0).toFixed(0)}ms`),
+      `rss ${(rssDelta > 40e6 ? colors.red : colors.green)(fmtBytes(rssDelta).padStart(10))}   ${colors.dim(
+        `${(performance.now() - t0).toFixed(0)}ms`,
+      )}`,
   );
   return { heapDelta, bufDelta, rssDelta };
 }
@@ -106,7 +107,10 @@ const correct = await measure('CORRECT', correctRun);
 console.log(colors.dim('  AbortSignal.any threaded to the syscall, registry disposed via `using`, results spilled.'));
 
 section('verdict');
-verdict(correct.bufDelta < leaky.bufDelta, `arrayBuffers growth ${fmtBytes(correct.bufDelta)} vs ${fmtBytes(leaky.bufDelta)}`);
+verdict(
+  correct.bufDelta < leaky.bufDelta,
+  `arrayBuffers growth ${fmtBytes(correct.bufDelta)} vs ${fmtBytes(leaky.bufDelta)}`,
+);
 verdict(correct.bufDelta < 20e6, 'correct version keeps Buffer growth bounded');
 await settleGc(8);
 console.log(`\nFinalizationRegistry reported ${collectedCount()} collected run context(s).`);
@@ -118,4 +122,4 @@ console.log(
   ),
 );
 console.log(colors.dim('\nAlso useful on stage: process.getActiveResourcesInfo() ->'));
-console.log(colors.dim('  ' + JSON.stringify([...new Set(process.getActiveResourcesInfo())])));
+console.log(colors.dim(`  ${JSON.stringify([...new Set(process.getActiveResourcesInfo())])}`));

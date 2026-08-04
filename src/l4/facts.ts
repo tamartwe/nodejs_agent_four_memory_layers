@@ -1,5 +1,5 @@
-import { cosine, ToyTopicEmbedder, type Embedder } from './embeddings.js';
 import { randomUUID } from 'node:crypto';
+import { cosine, ToyTopicEmbedder, type Embedder } from './embeddings.js';
 
 /**
  * The WRITE path — where "signal, not garbage" is actually decided.
@@ -44,9 +44,7 @@ export class FactStore {
     return [...this.facts.values()];
   }
 
-  async upsert(
-    input: Omit<MemoryFact, 'id' | 'validTo' | 'supersedes' | 'lastAccessed'>,
-  ): Promise<UpsertResult> {
+  async upsert(input: Omit<MemoryFact, 'id' | 'validTo' | 'supersedes' | 'lastAccessed'>): Promise<UpsertResult> {
     const emb = await this.embedder.embed(input.text);
 
     // (b) Deduplication. Agents re-derive the same fact every session. Without this the

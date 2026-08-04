@@ -102,8 +102,9 @@ export class MemoryStore {
       .filter((r) => r.score >= bm25Floor)
       .filter((r) => this.isCurrent(r.id));
 
-    const fused =
-      mode === 'vector' ? reRank(vectorList) : mode === 'lexical' ? reRank(lexicalList) : rrf([lexicalList, vectorList]);
+    let fused = rrf([lexicalList, vectorList]);
+    if (mode === 'vector') fused = reRank(vectorList);
+    else if (mode === 'lexical') fused = reRank(lexicalList);
 
     const vectorRankById = new Map(vectorList.map((r, i) => [r.id, i + 1]));
     const lexicalRankById = new Map(lexicalList.map((r, i) => [r.id, i + 1]));
@@ -126,7 +127,7 @@ export class MemoryStore {
 
     // Diversify, then cap. (In production a cross-encoder rerank goes between these two:
     // retrieve 30-50, rerank to 5-10. It is the single biggest precision win.)
-    return mmr(pool, limit, mmrLambda, cosine);
+    return mmr(pool, limit, cosine, mmrLambda);
   }
 
   private isCurrent(id: string): boolean {
@@ -157,7 +158,7 @@ export function pack(hits: Hit[], budget: number, maxPerDoc = 2): string {
     if (seen >= maxPerDoc) continue;
     const block =
       `<doc id="${h.chunk.docId}" date="${h.chunk.date ?? 'unknown'}" score="${h.score.toFixed(4)}">\n` +
-      `${h.chunk.context ? h.chunk.context + '\n' : ''}${h.chunk.content}\n</doc>`;
+      `${h.chunk.context ? `${h.chunk.context}\n` : ''}${h.chunk.content}\n</doc>`;
     const t = estimateTokens(block);
     if (used + t > budget) break;
     out.push(block);

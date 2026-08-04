@@ -27,7 +27,9 @@ export interface Usage {
 
 export function costUsd(u: Usage): number {
   const inputCost =
-    (u.input_tokens + u.cache_creation_input_tokens * CACHE_WRITE_5M_MULTIPLIER + u.cache_read_input_tokens * CACHE_READ_MULTIPLIER) *
+    (u.input_tokens +
+      u.cache_creation_input_tokens * CACHE_WRITE_5M_MULTIPLIER +
+      u.cache_read_input_tokens * CACHE_READ_MULTIPLIER) *
     (BASE_INPUT_PER_MTOK / 1e6);
   return inputCost + u.output_tokens * (BASE_OUTPUT_PER_MTOK / 1e6);
 }

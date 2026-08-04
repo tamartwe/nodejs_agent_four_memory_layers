@@ -15,7 +15,7 @@
 ## Running order on stage
 
 ```
-npm run act0    # 20 turns -> 5.2M tokens, $40, event loop p99 ~500ms
+npm run act0    # REAL API calls (needs ANTHROPIC_API_KEY): a few turns, tokens/cost climb live
 npm run act1    # overflow -> naive fix -> a DIFFERENT 400
 npm run act2    # 57% vs 95% cache hit rate on the identical conversation
 npm run act3    # heapUsed 85 KB while arrayBuffers grows 120 MB
@@ -23,9 +23,13 @@ npm run act4    # cosine returns a real, well-formed, wrong ticket
 npm run act5    # all four layers, then crash at step 12 and resume
 ```
 
-Everything is deterministic and offline by default (`ScriptedModel` + `ToyTopicEmbedder`),
-so none of it depends on conference wifi. Set `ANTHROPIC_API_KEY` and swap in `LiveModel`
-to run the same acts against the real API.
+Act 0 hits the real Claude API (`claude-haiku-4-5` by default — fast and cheap enough to
+run live for cents; override with `MODEL=...`) so the token/cost growth on stage is genuine,
+not a scripted number. Export `ANTHROPIC_API_KEY` before you go on — without it, act0 falls
+back to an offline scripted model and says so loudly (don't present that fallback as real).
+Acts 1-5 are deterministic and offline by default (`ScriptedModel` + `ToyTopicEmbedder`), so
+they don't depend on conference wifi; the same `LiveModel` swap works there too if you want
+every act live.
 
 ## Numbers to have memorized
 

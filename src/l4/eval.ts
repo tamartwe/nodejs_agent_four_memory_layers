@@ -57,6 +57,6 @@ export async function evaluate(
 }
 
 export function formatEval(label: string, r: EvalResult): string {
-  const pct = (x: number) => (x * 100).toFixed(1).padStart(5) + '%';
+  const pct = (x: number) => `${(x * 100).toFixed(1).padStart(5)}%`;
   return `${label.padEnd(22)} recall ${pct(r.recall)}  mrr ${pct(r.mrr)}  ndcg ${pct(r.ndcg)}  ctxPrecision ${pct(r.contextPrecision)}`;
 }

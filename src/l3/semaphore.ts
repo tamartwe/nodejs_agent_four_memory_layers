@@ -7,7 +7,11 @@ export function semaphore(max: number) {
     queue.shift()?.();
   };
   return async function acquire<T>(fn: () => Promise<T>): Promise<T> {
-    if (active >= max) await new Promise<void>((r) => queue.push(r));
+    if (active >= max) {
+      await new Promise<void>((r) => {
+        queue.push(r);
+      });
+    }
     active++;
     try {
       return await fn();

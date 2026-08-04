@@ -60,11 +60,7 @@ export interface AgentResult {
  *   L3 owns the tool state machine and spilling
  *   L4 owns retrieval and the fact store
  */
-export async function runAgent(
-  ctx: RunContext,
-  prompt: string,
-  opts: AgentOptions,
-): Promise<AgentResult> {
+export async function runAgent(ctx: RunContext, prompt: string, opts: AgentOptions): Promise<AgentResult> {
   const bufferOpts = { ...DEFAULT_BUFFER_OPTIONS, ...opts.buffer };
   const buffer = new ConversationBuffer(bufferOpts, new HeuristicSummarizer(), new InMemoryArchive());
   const stepLog = opts.stepLog ?? new InMemoryStepLog();
@@ -84,7 +80,11 @@ export async function runAgent(
       content: [{ type: 'text', text: pack(hits, opts.retrievalBudget ?? 2_000) }],
       meta: { kind: 'retrieval' },
     });
-    buffer.append({ role: 'assistant', content: [{ type: 'text', text: 'Context noted.' }], meta: { kind: 'retrieval' } });
+    buffer.append({
+      role: 'assistant',
+      content: [{ type: 'text', text: 'Context noted.' }],
+      meta: { kind: 'retrieval' },
+    });
   }
 
   buffer.append(userText(prompt));
@@ -179,9 +179,15 @@ export async function runAgent(
 /** The strawman from act0: messages.push in a loop, no eviction, no lifecycle. */
 export async function runStrawman(
   prompt: string,
-  opts: Pick<AgentOptions, 'system' | 'model' | 'tools' | 'spill'> & { maxSteps?: number },
+  opts: Pick<AgentOptions, 'system' | 'model' | 'tools' | 'spill'> & {
+    maxSteps?: number;
+    /** Fires after each turn is appended — how act0 shows the transcript growing in real time. */
+    onTurn?: (turn: number, messages: Message[]) => void;
+    /** Continue a prior runStrawman() conversation instead of starting fresh. */
+    history?: Message[];
+  },
 ): Promise<{ messages: Message[]; text: string }> {
-  const messages: Message[] = [userText(prompt)];
+  const messages: Message[] = [...(opts.history ?? []), userText(prompt)];
   let text = '';
 
   for (let i = 0; i < (opts.maxSteps ?? 24); i++) {
@@ -191,25 +197,40 @@ export async function runStrawman(
     const uses = res.content.filter((b) => b.type === 'tool_use');
     if (!uses.length) {
       text = res.content.map((b) => (b.type === 'text' ? b.text : '')).join('');
+      opts.onTurn?.(i, messages);
       break;
     }
 
     const results = [];
     for (const u of uses) {
       if (u.type !== 'tool_use') continue;
-      const tool = opts.tools.get(u.name)!;
-      const out = await tool.run(tool.schema.parse(u.input) as never, {
-        signal: AbortSignal.timeout(30_000),
-        ctx: null as never,
-      });
-      // The strawman inlines the ENTIRE result. This is the bug.
-      results.push({
-        type: 'tool_result' as const,
-        tool_use_id: u.id,
-        content: Buffer.isBuffer(out) ? out.toString('utf8') : String(out),
-      });
+      const tool = opts.tools.get(u.name);
+      try {
+        if (!tool) throw new Error(`no such tool: ${u.name}`);
+        const out = await tool.run(tool.schema.parse(u.input) as never, {
+          signal: AbortSignal.timeout(30_000),
+          ctx: null as never,
+        });
+        // The strawman inlines the ENTIRE result. This is the bug.
+        results.push({
+          type: 'tool_result' as const,
+          tool_use_id: u.id,
+          content: Buffer.isBuffer(out) ? out.toString('utf8') : String(out),
+        });
+      } catch (err) {
+        // A tool call failing (bad input, a bogus ref, whatever) must never crash the
+        // loop — it comes back as an error result so the model can see what went wrong
+        // and adjust, same as the real API's tool_result.is_error contract.
+        results.push({
+          type: 'tool_result' as const,
+          tool_use_id: u.id,
+          content: err instanceof Error ? err.message : String(err),
+          is_error: true,
+        });
+      }
     }
     messages.push({ role: 'user', content: results });
+    opts.onTurn?.(i, messages);
   }
 
   return { messages, text };

@@ -62,9 +62,7 @@ console.log(row('A: evict every turn', a));
 console.log(row('B: watermark', b));
 console.log('');
 console.log(
-  colors.bold(
-    `  ${(a.costUsd / Math.max(b.costUsd, 1e-9)).toFixed(1)}x cheaper, from one scheduling decision.`,
-  ),
+  colors.bold(`  ${(a.costUsd / Math.max(b.costUsd, 1e-9)).toFixed(1)}x cheaper, from one scheduling decision.`),
 );
 console.log(colors.dim('  Nothing about the model changed. Same transcript, same tools, same answers.'));
 console.log(colors.dim('\n  Corollary: injecting retrieved documents at the TOP of the prompt does this to you'));

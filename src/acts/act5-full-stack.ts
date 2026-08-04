@@ -55,12 +55,19 @@ const result = await withRun({ maxTokens: MAX_TOKENS, timeoutMs: 120_000 }, asyn
 const after = process.memoryUsage();
 
 section('dashboard');
-console.log(`L2  cache hit rate    ${(model.hitRate * 100).toFixed(1)}%   cost $${model.costUsd.toFixed(4)}   evictions ${result.buffer.evictions}`);
+console.log(
+  `L2  cache hit rate    ${(model.hitRate * 100).toFixed(1)}%   cost $${model.costUsd.toFixed(4)}   evictions ${result.buffer.evictions}`,
+);
 console.log(`L2  window            ${result.buffer.tokens} / ${MAX_TOKENS} tokens`);
 heapLine('L1  memory');
-console.log(`L1  heap delta        ${fmtBytes(after.heapUsed - before.heapUsed)}   arrayBuffers ${fmtBytes(after.arrayBuffers - before.arrayBuffers)}`);
+console.log(
+  `L1  heap delta        ${fmtBytes(after.heapUsed - before.heapUsed)}   arrayBuffers ${fmtBytes(after.arrayBuffers - before.arrayBuffers)}`,
+);
 verdict(model.hitRate > 0.4, 'cache hit rate above 40%');
-verdict(result.buffer.tokens < MAX_TOKENS, `a ${fmtBytes(20 * 1024 * 1024)} tool result contributed ~700 tokens to the window, not ~7,000,000`);
+verdict(
+  result.buffer.tokens < MAX_TOKENS,
+  `a ${fmtBytes(20 * 1024 * 1024)} tool result contributed ~700 tokens to the window, not ~7,000,000`,
+);
 console.log(
   colors.dim(
     '  (arrayBuffers still shows the peak allocation: read_file materializes the whole body\n' +
@@ -99,11 +106,10 @@ const plan = await planResume(crashLog, crashedRunId);
 console.log(`  step log:    ${plan.completed.size} completed, ${plan.interrupted.length} interrupted`);
 for (const rec of plan.interrupted.slice(0, 3)) {
   const tool = tools.get(rec.toolName);
-  const action = !tool
-    ? 'unknown tool -> escalate'
-    : tool.sideEffecting
-      ? `side-effecting -> re-issue with the SAME idempotency key ${rec.idempotencyKey.slice(0, 12)}…`
-      : 'read-only -> safe to re-run';
+  let action = 'read-only -> safe to re-run';
+  if (!tool) action = 'unknown tool -> escalate';
+  else if (tool.sideEffecting)
+    action = `side-effecting -> re-issue with the SAME idempotency key ${rec.idempotencyKey.slice(0, 12)}…`;
   console.log(`  ${rec.toolName.padEnd(14)} ${colors.dim(action)}`);
 }
 verdict(true, 'resume plan computed without re-running any completed step');

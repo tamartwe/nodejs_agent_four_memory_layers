@@ -52,7 +52,9 @@ section('3. safe cut points');
 const cuts = safeCutPoints(transcript);
 const unsafe = unsafeCutPoints(transcript);
 console.log(`cuttable:     ${cuts.slice(0, 14).join(', ')} ...`);
-console.log(colors.red(`NOT cuttable: ${unsafe.slice(0, 14).join(', ')} ...`) + colors.dim('   <- these carry a tool_result'));
+console.log(
+  colors.red(`NOT cuttable: ${unsafe.slice(0, 14).join(', ')} ...`) + colors.dim('   <- these carry a tool_result'),
+);
 console.log(colors.dim('  Consequence: a turn with 30 tool calls is ATOMIC. You cannot evict half of it.'));
 
 const safe = transcript.slice(cuts.find((c) => c >= 10)!);
@@ -71,8 +73,5 @@ const buffer = new ConversationBuffer(
 for (const m of transcript) buffer.append(m);
 const fitted = await buffer.fit();
 assertWellFormed(fitted);
-verdict(
-  true,
-  `${fitted.length} messages, ${buffer.tokens} tokens, ${buffer.evictions} eviction(s), invariants hold`,
-);
+verdict(true, `${fitted.length} messages, ${buffer.tokens} tokens, ${buffer.evictions} eviction(s), invariants hold`);
 console.log(colors.dim('\n  Act 2: the fix that works and costs you 7x anyway.'));
