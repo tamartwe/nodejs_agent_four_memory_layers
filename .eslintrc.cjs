@@ -1,53 +1,74 @@
-/* eslint-env node */
 module.exports = {
   root: true,
   env: {
     node: true,
-    es2023: true,
+    es2022: true,
   },
   parser: '@typescript-eslint/parser',
   parserOptions: {
     project: './tsconfig.json',
+    tsconfigRootDir: __dirname,
     sourceType: 'module',
-    ecmaVersion: 2023,
+    ecmaVersion: 2022,
   },
-  plugins: ['@typescript-eslint'],
   extends: [
     'airbnb-base',
     'airbnb-typescript/base',
-    'plugin:prettier/recommended',
   ],
-  ignorePatterns: ['dist/**', 'node_modules/**', '*.cjs'],
+  plugins: ['@typescript-eslint'],
   settings: {
     'import/resolver': {
-      typescript: {
-        alwaysTryTypes: true,
-        project: './tsconfig.json',
-      },
+      typescript: { project: './tsconfig.json' },
     },
   },
+  ignorePatterns: ['dist', 'node_modules', '.cache', '*.cjs'],
   rules: {
-    // This is an ESM project — relative imports use an explicit .js extension
-    // pointing at .ts source (resolved by the TS/tsx toolchain), which is the
-    // opposite of what Airbnb's CJS-era default expects.
-    'import/extensions': ['error', 'ignorePackages', { js: 'always', ts: 'never' }],
-    // Every act/tool file in this repo exports several named things by design —
-    // there is no single "main" export to prefer.
+    // This is a talk repo: every demo is a top-level script, not a module
+    // that gets imported, so console output IS the product.
+    'no-console': 'off',
+
+    // Demos intentionally run their turns in sequence, on stage, so the
+    // printed step/turn numbers line up with real per-call token usage.
+    // Parallelising them would be correct for a service, wrong for a demo.
+    'no-await-in-loop': 'off',
+
+    // for...of reads better than reduce/forEach for the top-level demo
+    // scripts, and Airbnb's rationale (regenerator overhead) doesn't apply
+    // under a modern target.
+    'no-restricted-syntax': 'off',
+
+    // ToolRunState.seq and MemoryStore.rrf rank counters are simple and
+    // idiomatic with ++.
+    'no-plusplus': 'off',
+
+    // These are single-file demos and small libraries, not a public
+    // package — forcing a default export per file adds ceremony with no
+    // reader benefit.
     'import/prefer-default-export': 'off',
-    // A demo repo run via `npm run actN`, not a library — devDependencies vs
-    // dependencies isn't a meaningful boundary here (act scripts, tsx, vitest.config
-    // all live under the same "dev tooling" umbrella).
-    'import/no-extraneous-dependencies': 'off',
-    'no-restricted-syntax': 'off', // for...of over Maps/Sets/async iterables is idiomatic here
-    'no-plusplus': 'off', // counters in loops (l1/leak-probe, model/client, l3/registry)
-    'no-continue': 'off', // used for early-exit clarity in tool/script generators
-    'no-await-in-loop': 'off', // the agent loop is deliberately sequential, turn by turn
-    'no-underscore-dangle': 'off',
-    'no-bitwise': 'off', // FNV-1a hashing (model/client) and byte-size math (64 << 20) are real bit ops
-    'class-methods-use-this': 'off', // ModelClient/Tool implementations have methods that don't touch `this`
-    'max-classes-per-file': 'off',
-    'no-console': 'off', // this whole repo IS a console dashboard — that's the product, not a leftover debug statement
-    '@typescript-eslint/lines-between-class-members': ['error', 'always', { exceptAfterSingleLine: true }],
-    '@typescript-eslint/no-use-before-define': ['error', { functions: false, classes: false }],
+    'import/no-default-export': 'off',
+
+    // TS import resolution already enforces extensionless relative
+    // imports via moduleResolution "bundler"; requiring .js extensions on
+    // .ts source files fights the toolchain instead of the language.
+    'import/extensions': 'off',
+
+    // Classes such as MemoryStore expose small pure helpers (preview,
+    // hist) that don't touch `this` by design.
+    'class-methods-use-this': 'off',
   },
+  overrides: [
+    {
+      // Top-level demo/entry scripts use await at module scope by design.
+      files: [
+        'src/00-basic-agent/agent.ts',
+        'src/*/before.ts',
+        'src/*/after.ts',
+        'src/*/seed.ts',
+        'src/*/demo.ts',
+      ],
+      rules: {
+        '@typescript-eslint/no-unused-expressions': 'off',
+      },
+    },
+  ],
 };

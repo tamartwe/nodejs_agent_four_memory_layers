@@ -1,46 +1,45 @@
 {
-  "name": "nodejs-agent-four-memory-layers",
+  "name": "agent-memory-demos",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "The Four Memory Layers Every Node.js Agent Needs — demo repo",
+  "description": "Demo code for the talk: The Four Memory Layers of a Node.js AI Agent",
   "engines": {
-    "node": ">=22"
+    "node": ">=20.11"
   },
   "scripts": {
-    "act0": "tsx src/acts/act0-strawman.ts",
-    "act1": "tsx src/acts/act1-overflow.ts",
-    "act2": "tsx src/acts/act2-cost-cliff.ts",
-    "act3": "node --expose-gc --import tsx src/acts/act3-leak.ts",
-    "act4": "tsx src/acts/act4-retrieval-noise.ts",
-    "act5": "tsx src/acts/act5-full-stack.ts",
+    "demo": "npm run demo:0",
+    "demo:0": "node --env-file=.env --import tsx src/00-basic-agent/agent.ts",
+    "demo:1:before": "node --expose-gc --import tsx src/01-working-memory/before.ts",
+    "demo:1:after": "node --expose-gc --import tsx src/01-working-memory/after.ts",
+    "demo:1:compare": "node --expose-gc --import tsx src/01-working-memory/compare.ts",
+    "demo:2:before": "node --import tsx src/02-conversation-history/before.ts",
+    "demo:2:after": "node --import tsx src/02-conversation-history/after.ts",
+    "demo:2:compare": "node --import tsx src/02-conversation-history/compare.ts",
+    "demo:3:before": "node --env-file=.env --expose-gc --import tsx src/03-tool-state/before.ts",
+    "demo:3:after": "node --env-file=.env --expose-gc --import tsx src/03-tool-state/after.ts",
+    "demo:4:seed": "node --env-file=.env --import tsx src/04-storage/seed.ts",
+    "demo:4:before": "node --env-file=.env --import tsx src/04-storage/before.ts",
+    "demo:4:after": "node --env-file=.env --import tsx src/04-storage/after.ts",
+    "demo:5": "node --env-file=.env --expose-gc --import tsx src/05-long-term-context/demo.ts",
+    "test": "node --expose-gc --import tsx --test tests/working-memory.test.ts tests/conversation-history.test.ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\" \"vitest.config.ts\"",
-    "lint:fix": "eslint \"src/**/*.ts\" \"test/**/*.ts\" \"vitest.config.ts\" --fix",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"*.{md,json}\"",
-    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\" \"*.{md,json}\""
+    "lint": "eslint \"src/**/*.ts\"",
+    "lint:fix": "eslint \"src/**/*.ts\" --fix"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.65.0"
   },
   "devDependencies": {
-    "@types/node": "^22.10.2",
+    "@types/node": "^26.2.0",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
     "eslint": "^8.57.1",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-airbnb-typescript": "^18.0.0",
-    "eslint-config-prettier": "^10.1.8",
     "eslint-import-resolver-typescript": "^4.4.5",
     "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-prettier": "^5.5.6",
-    "prettier": "^3.9.6",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
-  },
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.115.0",
-    "dotenv": "^17.4.2",
-    "zod": "^3.24.1",
-    "zod-to-json-schema": "^3.25.2"
+    "tsx": "^4.23.11",
+    "typescript": "^5.9.3"
   }
 }
