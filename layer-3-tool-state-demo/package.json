@@ -1,0 +1,15 @@
+{
+  "name": "layer-3-tool-state-demo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Teaching demo: a tool call can outlive the request that started it.",
+  "scripts": {
+    "demo:3:before": "node before.js",
+    "demo:3:after": "node after.js",
+    "demo": "npm run demo:3:before && npm run demo:3:after"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
