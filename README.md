@@ -8,7 +8,7 @@ The numbers printed on stage are the numbers the API returned.
 ```bash
 npm install
 cp .env.example .env      # add your keys
-npm run demo:4:seed       # warm the embedding cache — do this before the talk
+npm run demo:4:before     # long-term knowledge retrieval demo
 ```
 
 Node 20.11+. `--env-file` and `--expose-gc` are already wired into the npm scripts.
@@ -29,7 +29,7 @@ Messages API; Voyage is the recommended pairing). Embeddings are cached to
 | 1 | `npm run demo:1:before` → `demo:1:after` → `demo:1:compare` | Safe working memory: broken global run contexts versus scoped cleanup, bounds, cancellation, and small checkpoints. |
 | 2 | `npm run demo:2:before` → `:after` → `:compare` | Full transcript stays stored; model input is a bounded, token-aware context window. |
 | 3 | `npm run demo:3:before` → `:after` | `pending=` column and `transcript=` column. Before: stale pending entries after every tool failure. |
-| 4 | `npm run demo:4:before` → `:after` | Signal ratio. And Q3, where before invents an answer and after says "I don't have that." |
+| 4 | `npm run demo:4:before` → `:after` | Long-term knowledge: naive top-k injects distractors; pipeline admits only high-signal evidence. |
 | 5 | `npm run demo:5` | The `◀ SUPERSEDED` marker at turn 8, then the audit trail. |
 
 Each `before`/`after` pair is the same prompts, same model, same tools. The only
@@ -57,7 +57,7 @@ src/
   01-working-memory/   deterministic safe working-memory demo
   02-conversation-history/  ConversationWindow: budget, pin, compact, summarise
   03-tool-state/  ToolRunState: finally-delete, handle-based offload
-  04-storage/     MemoryStore: bm25 + vector + RRF, gate, rerank
+  04-storage/     long-term knowledge retrieval pipeline
   05-long-term-context/  StructuredMemory: supersession, and the full stack
 ```
 
